@@ -1,0 +1,10 @@
+CREATE TABLE domain_check_histories (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    total INT NOT NULL,
+    success INT NOT NULL,
+    failed INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    result VARCHAR(50)
+);

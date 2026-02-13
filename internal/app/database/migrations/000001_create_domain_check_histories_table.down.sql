@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS domain_check_histories;
