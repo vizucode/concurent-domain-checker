@@ -40,6 +40,11 @@ func Run() {
 
 	httpClient := http.Client{
 		Timeout: 2 * time.Minute,
+		Transport: &http.Transport{
+			MaxIdleConns:        200,
+			MaxIdleConnsPerHost: 150,
+			IdleConnTimeout:     30 * time.Second,
+		},
 	}
 
 	// Dependency Injection

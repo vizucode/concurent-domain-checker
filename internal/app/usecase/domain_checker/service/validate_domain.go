@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/vizucode/concurent-domain-checker/internal/app/dto/models"
 )
@@ -28,8 +29,12 @@ func (s *domainCheckerService) checkDomain(ctx context.Context, domains <-chan s
 						return
 					}
 
-					req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+					ctxReq, cancel := context.WithTimeout(ctx, 5*time.Second)
+					defer cancel()
+
+					req, err := http.NewRequestWithContext(ctxReq, http.MethodHead, url, nil)
 					if err != nil {
+						cancel()
 						result <- models.Domain{
 							FullUrl: url,
 						}
@@ -37,6 +42,7 @@ func (s *domainCheckerService) checkDomain(ctx context.Context, domains <-chan s
 					}
 
 					resp, err := s.apiClient.Do(req)
+					cancel()
 					if err != nil {
 						result <- models.Domain{
 							FullUrl: url,
