@@ -5,6 +5,5 @@ CREATE TABLE domain_check_histories (
     success INT NOT NULL,
     failed INT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    result VARCHAR(50)
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

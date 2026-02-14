@@ -10,9 +10,8 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
-	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"github.com/joho/godotenv"
+	"github.com/vizucode/concurent-domain-checker/configs/database"
 	"github.com/vizucode/concurent-domain-checker/internal/app/database/seeder"
 )
 
@@ -23,7 +22,7 @@ func main() {
 
 	err := godotenv.Load("configs/.env")
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		log.Println("Error loading .env file")
 	}
 
 	var (
@@ -66,11 +65,16 @@ func main() {
 
 	if *runSeeder {
 		fmt.Println("🚀 Running seeder...")
-		gormDB, err := gorm.Open("postgres", dsn)
+		gormDB, err := database.NewDatabaseConnection(dsn)
 		if err != nil {
 			log.Fatal(err)
 		}
-		defer gormDB.Close()
+
+		sqlDB, err := gormDB.DB()
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer sqlDB.Close()
 
 		if err := seeder.Seed(gormDB); err != nil {
 			log.Fatal("Seeder failed!", err)
