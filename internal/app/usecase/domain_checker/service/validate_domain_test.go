@@ -78,7 +78,7 @@ func TestCheckDomain(t *testing.T) {
 				return []models.Domain{
 					{
 						FullUrl:     serverURL,
-						StatusCode:  http.StatusOK, // 200 after following redirect
+						StatusCode:  http.StatusOK,
 						RedirectUrl: serverURL + "/target",
 					},
 				}
@@ -96,7 +96,7 @@ func TestCheckDomain(t *testing.T) {
 				return []models.Domain{
 					{
 						FullUrl:     "http://invalid-url-that-does-not-exist",
-						StatusCode:  0, // 0 because request failed
+						StatusCode:  503,
 						RedirectUrl: "",
 					},
 				}
@@ -161,7 +161,7 @@ func TestCheckDomain(t *testing.T) {
 			}
 			close(inputChan)
 
-			resultChan := svc.checkDomain(context.Background(), inputChan)
+			resultChan := svc.checkDomain(context.Background(), inputChan, &Metrics{})
 
 			var got []models.Domain
 			for result := range resultChan {

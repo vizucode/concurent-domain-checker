@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"github.com/vizucode/concurent-domain-checker/internal/app/dto/domains"
 	"github.com/vizucode/concurent-domain-checker/internal/app/dto/models"
@@ -29,11 +30,13 @@ func (s *domainCheckerService) RequestDomain(ctx context.Context, request *domai
 
 	var (
 		domainCheckHistory = models.DomainCheckHistory{}
+		metrics            = &Metrics{}
 	)
 
+	start := time.Now()
 	chanDomain := s.sanitizeDomain(request.Domains)
 
-	chanCheckDomain := s.checkDomain(ctx, chanDomain)
+	chanCheckDomain := s.checkDomain(ctx, chanDomain, metrics)
 
 	domainCheckHistory.Name = request.Name
 
@@ -47,12 +50,14 @@ func (s *domainCheckerService) RequestDomain(ctx context.Context, request *domai
 
 		domainCheckHistory.Total++
 
-		if domain.StatusCode < 400 {
+		if domain.StatusCode >= 200 && domain.StatusCode < 400 {
 			domainCheckHistory.Success++
 		} else {
 			domainCheckHistory.Failed++
 		}
 	}
+
+	metrics.ProcessingTime = time.Since(start)
 
 	err := s.saveDomain(ctx, &domainCheckHistory)
 	if err != nil {
