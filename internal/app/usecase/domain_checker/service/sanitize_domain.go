@@ -5,7 +5,7 @@ import (
 )
 
 func (s *domainCheckerService) sanitizeDomain(domains []string) chan string {
-	result := make(chan string)
+	result := make(chan string, 150)
 
 	go func() {
 		defer close(result)
