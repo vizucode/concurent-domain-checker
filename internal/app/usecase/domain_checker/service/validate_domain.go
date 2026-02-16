@@ -20,7 +20,7 @@ type Metrics struct {
 
 func (s *domainCheckerService) checkDomain(ctx context.Context, domains <-chan string, metrics *Metrics) <-chan models.Domain {
 	var (
-		result    = make(chan models.Domain)
+		result    = make(chan models.Domain, 150)
 		wg        = sync.WaitGroup{}
 		maxWorker = 150
 	)
