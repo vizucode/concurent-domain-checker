@@ -17,14 +17,16 @@ func (s *domainCheckerService) checkDomain(ctx context.Context, domains <-chan s
 
 	slog.Info("Starting worker pool", "workers", maxWorker)
 
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		for {
 			select {
 			case <-ctx.Done():
-				goto done
+				return
 			case url, ok := <-domains:
 				if !ok {
-					goto done
+					return
 				}
 
 				wg.Add(1)
@@ -37,8 +39,9 @@ func (s *domainCheckerService) checkDomain(ctx context.Context, domains <-chan s
 				}
 			}
 		}
+	}()
 
-	done:
+	go func() {
 		wg.Wait()
 		close(result)
 	}()
