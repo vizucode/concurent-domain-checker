@@ -161,7 +161,7 @@ func TestCheckDomain(t *testing.T) {
 			}
 			close(inputChan)
 
-			resultChan := svc.checkDomain(context.Background(), inputChan, &Metrics{})
+			resultChan := svc.checkDomain(context.Background(), inputChan, &models.Metrics{})
 
 			var got []models.Domain
 			for result := range resultChan {
