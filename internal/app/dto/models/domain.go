@@ -1,6 +1,11 @@
 package models
 
-import "time"
+import (
+	"context"
+	"sync"
+	"sync/atomic"
+	"time"
+)
 
 type Domain struct {
 	Id          int64     `gorm:"column:id" json:"id"`
@@ -10,4 +15,19 @@ type Domain struct {
 	RedirectUrl string    `gorm:"column:redirect_url" json:"redirect_url"`
 	CreatedAt   time.Time `gorm:"column:created_at" json:"created_at"`
 	UpdatedAt   time.Time `gorm:"column:updated_at" json:"updated_at"`
+}
+
+type Metrics struct {
+	TotalProcessed atomic.Int64
+	TotalSuccess   atomic.Int64
+	TotalFailed    atomic.Int64
+	ProcessingTime time.Duration
+}
+
+type JobRequest struct {
+	Ctx     context.Context
+	Url     string
+	Result  chan Domain
+	Metrics *Metrics
+	Wg      *sync.WaitGroup
 }

@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -17,12 +18,76 @@ type DomainCheckerService interface {
 type domainCheckerService struct {
 	database  repository.DatabaseRepository
 	apiClient *http.Client
+	jobCh     chan models.JobRequest
 }
 
 func NewDomainCheckerService(database repository.DatabaseRepository, apiClient *http.Client) DomainCheckerService {
-	return &domainCheckerService{
+	svc := &domainCheckerService{
 		database:  database,
 		apiClient: apiClient,
+		jobCh:     make(chan models.JobRequest, 150),
+	}
+
+	maxWorker := 150
+
+	go func() {
+		for range maxWorker {
+			go svc.worker()
+		}
+	}()
+
+	return svc
+}
+
+func (s *domainCheckerService) worker() {
+	for job := range s.jobCh {
+		func() {
+			defer job.Wg.Done()
+
+			req, err := http.NewRequestWithContext(job.Ctx, http.MethodGet, job.Url, nil)
+			if err != nil {
+				slog.Error("Failed to check domain", "url", job.Url, "error", err)
+				job.Metrics.TotalFailed.Add(1)
+				job.Metrics.TotalProcessed.Add(1)
+				job.Result <- models.Domain{
+					FullUrl:    job.Url,
+					StatusCode: 503,
+				}
+				return
+			}
+
+			resp, err := s.apiClient.Do(req)
+			if err != nil {
+				slog.Error("Failed to check domain", "url", job.Url, "error", err)
+				job.Metrics.TotalFailed.Add(1)
+				job.Metrics.TotalProcessed.Add(1)
+				job.Result <- models.Domain{
+					FullUrl:    job.Url,
+					StatusCode: 503,
+				}
+				return
+			}
+
+			job.Metrics.TotalProcessed.Add(1)
+			if resp.StatusCode >= 200 && resp.StatusCode < 400 {
+				job.Metrics.TotalSuccess.Add(1)
+			} else {
+				job.Metrics.TotalFailed.Add(1)
+			}
+
+			redirectURL := ""
+			if resp.Request != nil && resp.Request.URL.String() != job.Url {
+				redirectURL = resp.Request.URL.String()
+			}
+
+			resp.Body.Close()
+
+			job.Result <- models.Domain{
+				FullUrl:     job.Url,
+				StatusCode:  resp.StatusCode,
+				RedirectUrl: redirectURL,
+			}
+		}()
 	}
 }
 
@@ -30,7 +95,7 @@ func (s *domainCheckerService) RequestDomain(ctx context.Context, request *domai
 
 	var (
 		domainCheckHistory = models.DomainCheckHistory{}
-		metrics            = &Metrics{}
+		metrics            = &models.Metrics{}
 	)
 
 	start := time.Now()
